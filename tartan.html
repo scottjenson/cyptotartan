@@ -6,13 +6,32 @@
 
 <style>
 body {
-	margin: 20;
+	margin: 10;
+    font: 15px arial, sans-serif;
 } 
+h1 {
+    font-size: 30px;
+}
+h2 {
+    font-size: 16px;
+}
+h3 {
+    font-size: 12px;
+    margin-bottom: 0px;
+}
 #canvas {
 	border: 1px solid black;
+	margin-bottom: 20px;
+}
+#key {
+	display: block;
+	overflow:hidden;
 }
 </style>
-  <script type="application/javascript">  
+<script type="application/javascript">  
+
+// Globals
+// These are just starters, PLEASE feel free to change
 var palettes = [
 	['#FE938C', '#E6B89C', '#EAD2AC', '#9CAFB7'],
 	['#FF4E00', '#8EA604', '#F5BB00', '#EC9F05'],
@@ -33,60 +52,133 @@ var palettes = [
 ];
 var palette;
 var pIndex = 0;
+var cells		= 4;
+var cellw		= 320/cells;
 
-function setColor(context) {
-	var color = palette[Math.floor(Math.random()*4)];
-	pIndex++;
-	pIndex = (pIndex>=4)? 0 : pIndex;
-	
-	context.strokeStyle = color;
+/* generateKey()
+Create a 64 byte hex string.
+A bit magical, just combining  Math and String calls. Convert random number
+to a hex string, pad with 0s and hack off the front
+*/
+function generateKey() {
+	var key = "";
+	for (i=0; i<16; i++) {
+		key += (Math.random().toString(16) + '0000').slice(2, 6) + " ";
+	}
+	return key;
+}
+// break up the hex string into array of 16 4 byte strings
+// empty array means incorrect length string
+function breakupKey(key) {
+	var result = [];
+	if (typeof key == "string") {
+		key = key.replace(/\s/g, '');
+		if (key.length == 64) {
+			for (i=0; i<64; i+=4) {
+				result.push(key.substring(i, i+4));
+			}
+		}
+	}
+	return result;
 }
 
-function setOpacity(context) {
-	var opac = (Math.floor(Math.random()*70)+30)/100;
+function getWidth(chunk) {
+	var i = parseInt(chunk, 16);
+	var ratio = i / 0xffff;
+	var w = Math.floor(ratio*cellw*.9) + (cellw *.1);
+	return w;    
+}
+function setColor(context, chunk) {
+	// set color
+	var i = parseInt(chunk, 16);
+	var color = palette[i % 4];	
+	console.log(i % 4);
+	context.strokeStyle = color;
+
+	// set opacity
+	var ratio = i / 0xffff;
+	var opac = (Math.floor(ratio*70)+30)/100;
 	context.globalAlpha = opac;
 }
 
-function init(){
-	var cells = 4;
-	var cellw = 320/cells;
+// bound possible opacity levels between .30 - 1.0
+function setOpacity(context, chunk) {
+	var i = parseInt(chunk, 16);
+	var ratio = i / 0xffff;
+	var opac = (Math.floor(ratio*70)+30)/100;
+	context.globalAlpha = opac;
+}
 
-	palette = palettes[Math.floor(Math.random()*9)];
+function setPalette(chunk) {
+	var i = parseInt(chunk, 16);
+	palette = palettes[i % 9];
 	pIndex = 0;
-	var c=document.getElementById("canvas");
-	var ctx=c.getContext("2d");
+}
+ 
+
+function drawRandomKey() {
+	var key = document.getElementById("key");
+	key.value = generateKey();
+	drawKey(key.value);
+}
+
+function drawGivenKey() {
+	var key = document.getElementById("key").value;
+	drawKey(key);
+}
+
+
+function drawKey(key) { 
+	var c		= document.getElementById("canvas");
+	var ctx		= c.getContext("2d");
+	ctx.clearRect(0, 0, 320, 320);
+	
+	var keyArray	= breakupKey(key);
+	var keyIndex = 0;
+
+	setPalette(keyArray[0]);
 	for (i=0; i<cells; i++) {
 		ctx.beginPath();
-		var w = Math.floor(Math.random()*cellw*.9) + (cellw *.1);
+		var w = getWidth(keyArray[keyIndex++]); 
 		var x= i*cellw+(w/2);
 		ctx.moveTo(x,0);
 		ctx.lineWidth=w;
 		ctx.lineTo(x,320);
 		ctx.closePath();
-		setColor(ctx);
-		setOpacity(ctx);
+		setColor(ctx, keyArray[keyIndex++]);
 		ctx.stroke();
 	}
 	for (j=0; j<cells; j++) {
 		ctx.beginPath();
-		var w = Math.floor(Math.random()*cellw*.9) + (cellw *.1);
+		var w = getWidth(keyArray[keyIndex++]); 
 		var y= j*cellw+(w/2);
 		ctx.moveTo(0,y);
 		ctx.lineTo(320,y);
 		ctx.closePath();
 		ctx.lineWidth=w;
-		setColor(ctx);
-		setOpacity(ctx);
+		setColor(ctx, keyArray[keyIndex++]);
 		ctx.stroke();
 	}
+	console.log("Final keyIndex" + keyIndex);
 }
 
-  </script>  
+
+</script>  
 
 </head>
 
-<body onload="init();">
+<body onload="drawGivenKey();">
+<h1>CryptoTartan</h1>
+<h2>Turn 64 byte hex keys into a quasi unique pattern</h2>
+
 <canvas id="canvas" width=320 height=320></canvas>
+
+<h3>Paste something in here</h3>
+<textarea id="key" rows="2" cols="35">
+43be 04ce 97ec 2159 f7c3 4ff6 adc6 f90d 32b5 d417 73ea e704 cada 629d cfc7 6899 
+</textarea>
+<button id="decode" type="button" onclick="drawGivenKey()">Decode</button>
+<button id="random" type="button" onclick="drawRandomKey()">Random</button>
 </body>
 
 </html>
