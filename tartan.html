@@ -82,12 +82,15 @@ function breakupKey(key) {
 	return result;
 }
 
+// Width of this line
 function getWidth(chunk) {
 	var i = parseInt(chunk, 16);
 	var ratio = i / 0xffff;
 	var w = Math.floor(ratio*cellw*.9) + (cellw *.1);
 	return w;    
 }
+
+// Color and opacity of this line
 function setColor(context, chunk) {
 	// set color
 	var i = parseInt(chunk, 16);
@@ -101,14 +104,7 @@ function setColor(context, chunk) {
 	context.globalAlpha = opac;
 }
 
-// bound possible opacity levels between .30 - 1.0
-function setOpacity(context, chunk) {
-	var i = parseInt(chunk, 16);
-	var ratio = i / 0xffff;
-	var opac = (Math.floor(ratio*70)+30)/100;
-	context.globalAlpha = opac;
-}
-
+// Which palette to use for this Tartan
 function setPalette(chunk) {
 	var i = parseInt(chunk, 16);
 	palette = palettes[i % 9];
