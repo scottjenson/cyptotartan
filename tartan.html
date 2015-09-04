@@ -62,8 +62,16 @@ to a hex string, pad with 0s and hack off the front
 */
 function generateKey() {
 	var key = "";
-	for (i=0; i<16; i++) {
-		key += (Math.random().toString(16) + '0000').slice(2, 6) + " ";
+	if (typeof window.crypto.getRandomValues == 'function') {
+		bytes = new Uint32Array(16);
+		window.crypto.getRandomValues(bytes);
+		for (n=0; n<bytes.length; n++) {
+			key += bytes[n].toString().slice(2, 6) + " ";
+		}
+	} else {
+		for (i=0; i<16; i++) {
+			key += (Math.random().toString(16) + '0000').slice(2, 6) + " ";
+		}
 	}
 	return key;
 }
